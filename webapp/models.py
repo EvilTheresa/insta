@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.urls import reverse
 
 
@@ -9,6 +9,16 @@ class CreateUpdateAbstractModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class PostLike(models.Model):
+    user = models.ForeignKey(
+        get_user_model(),
+        related_name="post_likes",
+        on_delete=models.SET_DEFAULT,
+        default=1
+    )
+    post = models.ForeignKey('webapp.Post', on_delete=models.CASCADE)
 
 
 class Post(CreateUpdateAbstractModel):
@@ -22,6 +32,8 @@ class Post(CreateUpdateAbstractModel):
 
     def get_absolute_url(self):
         return reverse("webapp:post_view", kwargs={"pk": self.pk})
+    def count_likes(self):
+        return self.postlike_set.count()
 
     class Meta:
         db_table = "posts"
