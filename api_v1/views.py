@@ -1,11 +1,12 @@
-from rest_framework import status
-from rest_framework.decorators import api_view, action
+from rest_framework import status, permissions
+from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
+from api_v1.permissions import IsAuthenticatedToEdit, IsAuthorOrReadOnly
 from api_v1.serializers.post import PostSerializer
 from webapp.models import Post
 
@@ -13,6 +14,18 @@ from webapp.models import Post
 class PostViewSet(ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+    permissions = [IsAuthenticatedToEdit, IsAuthorOrReadOnly]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [permissions.AllowAny]
+        elif self.action in ['like', 'unlike', 'create']:
+            permission_classes = [IsAuthenticatedToEdit]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            permission_classes = [IsAuthorOrReadOnly]
+        else:
+            permission_classes = [permissions.IsAdminUser]
+        return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
